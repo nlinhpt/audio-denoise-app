@@ -23,23 +23,6 @@ Audio Denoiser is a modern web application that allows users to remove noise fro
 
 ![Audio Denoiser Demo](demo-screenshot.png)
 
-## 🛠 Technologies Used
-
-### Backend
-- **Python 3.7+** - Main programming language
-- **Flask** - Web framework
-- **NumPy** - Array processing and scientific computing
-- **SciPy** - Digital signal processing library
-- **librosa** - Audio processing and analysis
-- **soundfile** - Audio file reading/writing
-
-### Frontend
-- **HTML5** - Web page structure
-- **CSS3** - Styling with gradient, animation, responsive
-- **JavaScript** - Interaction and dynamic effects
-- **Font Awesome** - Icons
-- **Google Fonts (Inter)** - Typography
-
 ### Algorithm
 - **DFT (Discrete Fourier Transform)** - Frequency spectrum analysis
 - **Spectral Subtraction** - Spectral denoising
