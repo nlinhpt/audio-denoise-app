@@ -185,21 +185,5 @@ We welcome all contributions! To participate:
 ## 📝 License
 
 This project is distributed under the MIT License. See `LICENSE` file for more details.
-
-## 📞 Contact
-
-- **Developer**: [Your Name]
-- **Email**: your.email@example.com
-- **GitHub**: [@nlinhpt](https://github.com/nlinhpt)
-- **Repository**: [audio-denoise-app](https://github.com/nlinhpt/audio-denoise-app)
-
-## 🙏 Acknowledgments
-
-- Thanks to Python and Flask community
-- NumPy and SciPy libraries for signal processing tools
-- Font Awesome for beautiful icons
-- Google Fonts for typography
-
----
-
+ 
 ⭐ **If this project is helpful, please give us a star!** ⭐
