@@ -1,0 +1,7 @@
+flask
+soundfile
+scipy
+numpy
+matplotlib
+werkzeug
+pydub

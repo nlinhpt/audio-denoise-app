@@ -2,34 +2,564 @@
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <title>Khử nhiễu âm thanh AI</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Audio DFT Denoiser - Khử Nhiễu Âm Thanh Bằng DFT</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body>
-    <canvas id="wave-bg"></canvas>
-    <div class="container">
-        <h1>Khử Nhiễu Âm Thanh</h1>
-        <p>Tải lên file âm thanh (wav, mp3, flac, ogg, m4a) để khử nhiễu bằng AI</p>
-        <form method="POST" enctype="multipart/form-data">
-            <input type="file" name="audio_file" required>
-            <button type="submit">Xử lý & Tải về</button>
-        </form>
+    <div class="bg-animation">
+        <canvas id="wave-bg"></canvas>
+        <div class="gradient-overlay"></div>
+    </div>
+    
+    <header class="header">
+        <div class="header-content">
+            <div class="logo">
+                <i class="fas fa-wave-square"></i>
+                <span>Audio DFT</span>
+            </div>
+            <nav class="nav">
+                <a href="#about" class="nav-link">Giới thiệu</a>
+                <a href="#features" class="nav-link">Tính năng</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="main-container">
         {% if result_url %}
-        <div class="result">
-            <h3>Đã xử lý xong!</h3>
-            <a href="{{ result_url }}" class="download-btn">Tải file đã khử nhiễu</a>
+        <!-- Compact Hero for Results -->
+        <div class="hero-section hero-compact">
+            <div class="hero-content">
+                <div class="hero-icon">
+                    <i class="fas fa-check-circle"></i>
+                </div>
+                <h1 class="hero-title">
+                    Xử Lý Hoàn Tất
+                    <span class="gradient-text">Bằng DFT</span>
+                </h1>
+                <p class="hero-description">
+                    File âm thanh đã được khử nhiễu thành công. So sánh kết quả và tải xuống file đã xử lý.
+                </p>
+            </div>
+        </div>
+        {% else %}
+        <!-- Full Hero for Upload -->
+        <div class="hero-section">
+            <div class="hero-content">
+                <div class="hero-icon">
+                    <i class="fas fa-microphone-lines"></i>
+                </div>
+                <h1 class="hero-title">
+                    Khử Nhiễu Âm Thanh
+                    <span class="gradient-text">Bằng DFT</span>
+                </h1>
+                <p class="hero-description">
+                    Sử dụng thuật toán Discrete Fourier Transform (DFT) để phân tích và loại bỏ nhiễu từ file âm thanh. 
+                    Hỗ trợ nhiều định dạng: WAV, MP3, FLAC, OGG, M4A
+                </p>
+            </div>
         </div>
         {% endif %}
-        {% with messages = get_flashed_messages() %}
-          {% if messages %}
-            <ul class="flashes">
-              {% for message in messages %}
-                <li>{{ message }}</li>
-              {% endfor %}
-            </ul>
-          {% endif %}
-        {% endwith %}
-    </div>
-    <script src="{{ url_for('static', filename='wave-bg.js') }}"></script>
+
+        {% if not result_url %}
+        <div class="upload-section">
+            <div class="upload-container">
+                <form method="POST" enctype="multipart/form-data" id="uploadForm">
+                    <div class="file-upload-area" id="fileUploadArea">
+                        <div class="upload-icon">
+                            <i class="fas fa-cloud-upload-alt"></i>
+                        </div>
+                        <h3>Kéo thả file hoặc click để chọn</h3>
+                        <p>Hỗ trợ: WAV, MP3, FLAC, OGG, M4A (tối đa 50MB)</p>
+                        <input type="file" name="audio_file" id="audioFile" accept=".wav,.mp3,.flac,.ogg,.m4a" required>
+                        <div class="file-info" id="fileInfo" style="display: none;">
+                            <i class="fas fa-file-audio"></i>
+                            <span id="fileName"></span>
+                            <span id="fileSize"></span>
+                        </div>
+                    </div>
+                    
+                    <div class="controls-section">
+                        <button type="submit" class="process-btn" id="processBtn" disabled>
+                            <i class="fas fa-waveform-lines"></i>
+                            <span>Xử Lý DFT & Tải Về</span>
+                        </button>
+                    </div>
+                </form>
+
+                <div class="progress-section" id="progressSection" style="display: none;">
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="progressFill"></div>
+                    </div>
+                    <p class="progress-text">Đang áp dụng DFT để khử nhiễu...</p>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        {% if result_url %}
+        <!-- Audio Comparison Section -->
+        <div class="upload-section">
+            <div class="upload-container">
+                <div class="audio-comparison">
+                        <div class="comparison-header">
+                            <h3><i class="fas fa-headphones"></i> So Sánh Kết Quả</h3>
+                            <p>Nghe và so sánh chất lượng âm thanh trước và sau khi khử nhiễu</p>
+                        </div>
+                        
+                        <div class="audio-players-horizontal">
+                            <!-- Original Audio -->
+                            <div class="audio-player original-player">
+                                <div class="audio-header">
+                                    <div class="audio-title">
+                                        <i class="fas fa-volume-low"></i>
+                                        <h4>File Gốc (Có Nhiễu)</h4>
+                                    </div>
+                                </div>
+                                <div class="audio-container">
+                                    <audio id="originalAudio" controls preload="metadata">
+                                        <source src="{{ url_for('serve_original') }}" type="audio/wav">
+                                        Trình duyệt không hỗ trợ audio player.
+                                    </audio>
+                                </div>
+                                <div class="audio-info">
+                                    <span class="audio-label before">Trước xử lý</span>
+                                </div>
+                            </div>
+                            
+                            <!-- VS Divider -->
+                            <div class="vs-divider-horizontal">
+                                <div class="vs-content">
+                                    <div class="vs-text">VS</div>
+                                    <div class="processing-info">
+                                        <span>DFT</span>
+                                        <i class="fas fa-arrow-right"></i>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Processed Audio -->
+                            <div class="audio-player processed-player">
+                                <div class="audio-header">
+                                    <div class="audio-title">
+                                        <i class="fas fa-volume-high"></i>
+                                        <h4>File Sau Khử Nhiễu</h4>
+                                    </div>
+                                </div>
+                                <div class="audio-container">
+                                    <audio id="processedAudio" controls preload="metadata">
+                                        <source src="{{ result_url }}" type="audio/wav">
+                                        Trình duyệt không hỗ trợ audio player.
+                                    </audio>
+                                </div>
+                                <div class="audio-info">
+                                    <span class="audio-label after">Sau xử lý</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="result-actions">
+                        <a href="{{ result_url }}" class="download-btn">
+                            <i class="fas fa-download"></i>
+                            <span>Tải File Đã Khử Nhiễu</span>
+                        </a>
+                        
+                        <a href="{{ url_for('index') }}" class="new-file-btn">
+                            <i class="fas fa-plus"></i>
+                            <span>Xử Lý File Mới</span>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+                {% with messages = get_flashed_messages() %}
+                  {% if messages %}
+                    <div class="error-section">
+                        {% for message in messages %}
+                            <div class="error-message">
+                                <i class="fas fa-exclamation-triangle"></i>
+                                <span>{{ message }}</span>
+                            </div>
+                        {% endfor %}
+                    </div>
+                  {% endif %}
+                {% endwith %}
+
+        <section id="features" class="features-section">
+            <div class="features-container">
+                <h2>Tính Năng Nổi Bật</h2>
+                <div class="features-grid">
+                    <div class="feature-card">
+                        <div class="feature-icon">
+                            <i class="fas fa-chart-line"></i>
+                        </div>
+                        <h3>Thuật Toán DFT</h3>
+                        <p>Sử dụng Discrete Fourier Transform để phân tích tần số và loại bỏ nhiễu chính xác</p>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon">
+                            <i class="fas fa-bolt"></i>
+                        </div>
+                        <h3>Xử Lý Nhanh</h3>
+                        <p>Tối ưu hóa hiệu suất với FFT, xử lý file âm thanh trong thời gian ngắn</p>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon">
+                            <i class="fas fa-wave-square"></i>
+                        </div>
+                        <h3>Chất Lượng Cao</h3>
+                        <p>Bảo toàn chất lượng âm thanh gốc trong khi loại bỏ nhiễu hiệu quả</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="footer">
+        <div class="footer-content">
+            <p>&copy; 2025 Audio DFT Denoiser. Tất cả quyền được bảo lưu.</p>
+        </div>
+    </footer>
+
+    <script src="{{ url_for('static', filename='wave-b.js') }}"></script>
+    <script>
+        // File upload interactions
+        const fileUploadArea = document.getElementById('fileUploadArea');
+        const audioFile = document.getElementById('audioFile');
+        const fileInfo = document.getElementById('fileInfo');
+        const fileName = document.getElementById('fileName');
+        const fileSize = document.getElementById('fileSize');
+        const processBtn = document.getElementById('processBtn');
+        const uploadForm = document.getElementById('uploadForm');
+        const progressSection = document.getElementById('progressSection');
+
+        // Drag and drop functionality
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            fileUploadArea.addEventListener(eventName, preventDefaults, false);
+            document.body.addEventListener(eventName, preventDefaults, false);
+        });
+
+        ['dragenter', 'dragover'].forEach(eventName => {
+            fileUploadArea.addEventListener(eventName, highlight, false);
+        });
+
+        ['dragleave', 'drop'].forEach(eventName => {
+            fileUploadArea.addEventListener(eventName, unhighlight, false);
+        });
+
+        fileUploadArea.addEventListener('click', function(e) {
+            if (e.target === audioFile) return; // Tránh double click
+            audioFile.click();
+        });
+        audioFile.addEventListener('change', handleFileSelect);
+
+        function preventDefaults(e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+
+        function highlight(e) {
+            fileUploadArea.classList.add('drag-over');
+        }
+
+        function unhighlight(e) {
+            fileUploadArea.classList.remove('drag-over');
+        }
+
+        function handleDrop(e) {
+            const dt = e.dataTransfer;
+            const files = dt.files;
+            audioFile.files = files;
+            handleFileSelect();
+        }
+
+        function handleFileSelect() {
+            const file = audioFile.files[0];
+            if (file) {
+                fileName.textContent = file.name;
+                fileSize.textContent = formatFileSize(file.size);
+                fileInfo.style.display = 'flex';
+                fileUploadArea.classList.add('has-file');
+                processBtn.disabled = false;
+            }
+        }
+
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+
+        // Form submission with progress
+        uploadForm.addEventListener('submit', function(e) {
+            if (audioFile.files.length > 0) {
+                progressSection.style.display = 'block';
+                processBtn.disabled = true;
+                
+                // Simulate progress (you can implement real progress tracking)
+                let progress = 0;
+                const progressFill = document.getElementById('progressFill');
+                const interval = setInterval(() => {
+                    progress += Math.random() * 15;
+                    if (progress > 90) progress = 90;
+                    progressFill.style.width = progress + '%';
+                }, 500);
+                
+                // Clear interval after form submission
+                setTimeout(() => clearInterval(interval), 10000);
+            }
+        });
+
+        // Smooth scrolling for navigation links
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({
+                        behavior: 'smooth'
+                    });
+                }
+            });
+        });
+
+        // Simple audio comparison with spectrum visualization
+        const originalAudio = document.getElementById('originalAudio');
+        const processedAudio = document.getElementById('processedAudio');
+        const originalStatus = document.getElementById('originalStatus');
+        const processedStatus = document.getElementById('processedStatus');
+
+        if (originalAudio && processedAudio) {
+            // Individual play/stop buttons
+            document.querySelectorAll('.play-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const target = this.dataset.target;
+                    if (target === 'original') {
+                        originalAudio.play().catch(() => {});
+                    } else {
+                        processedAudio.play().catch(() => {});
+                    }
+                });
+            });
+
+            document.querySelectorAll('.stop-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const target = this.dataset.target;
+                    if (target === 'original') {
+                        originalAudio.pause();
+                        originalAudio.currentTime = 0;
+                    } else {
+                        processedAudio.pause();
+                        processedAudio.currentTime = 0;
+                    }
+                });
+            });
+
+            // Audio status updates
+            originalAudio.addEventListener('play', () => {
+                originalStatus.textContent = 'Đang phát';
+                originalStatus.className = 'audio-status playing';
+                animateSpectrum('originalSpectrum', 'original');
+            });
+            
+            originalAudio.addEventListener('pause', () => {
+                originalStatus.textContent = 'Tạm dừng';
+                originalStatus.className = 'audio-status paused';
+            });
+            
+            originalAudio.addEventListener('ended', () => {
+                originalStatus.textContent = 'Đã kết thúc';
+                originalStatus.className = 'audio-status ended';
+            });
+
+            processedAudio.addEventListener('play', () => {
+                processedStatus.textContent = 'Đang phát';
+                processedStatus.className = 'audio-status playing';
+                animateSpectrum('processedSpectrum', 'processed');
+            });
+            
+            processedAudio.addEventListener('pause', () => {
+                processedStatus.textContent = 'Tạm dừng';
+                processedStatus.className = 'audio-status paused';
+            });
+            
+            processedAudio.addEventListener('ended', () => {
+                processedStatus.textContent = 'Đã kết thúc';
+                processedStatus.className = 'audio-status ended';
+            });
+
+            // Initialize spectrum visualization immediately
+            setTimeout(() => {
+                initializeSpectrum();
+            }, 500);
+        }
+
+        // Spectrum visualization functions
+        function initializeSpectrum() {
+            // Always try to draw spectrum, even if audio elements don't exist yet
+            setTimeout(() => {
+                drawSpectrum('originalSpectrum', 'original');
+                drawSpectrum('processedSpectrum', 'processed');
+            }, 100);
+        }
+
+        // Initialize spectrum on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeSpectrum();
+            // Refresh spectrum every few seconds to show animation
+            setInterval(() => {
+                drawSpectrum('originalSpectrum', 'original');
+                drawSpectrum('processedSpectrum', 'processed');
+            }, 2000);
+        });
+
+        function drawSpectrum(canvasId, type) {
+            const canvas = document.getElementById(canvasId);
+            if (!canvas) return;
+
+            const ctx = canvas.getContext('2d');
+            const width = canvas.width;
+            const height = canvas.height;
+
+            // Clear canvas
+            ctx.clearRect(0, 0, width, height);
+
+            // Create gradient background
+            const gradient = ctx.createLinearGradient(0, 0, 0, height);
+            gradient.addColorStop(0, 'rgba(26, 26, 46, 0.8)');
+            gradient.addColorStop(1, 'rgba(10, 10, 15, 0.9)');
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, width, height);
+
+            // Draw frequency spectrum simulation
+            const bars = 80;
+            const barWidth = width / bars;
+            const time = Date.now() * 0.001; // For animation
+
+            for (let i = 0; i < bars; i++) {
+                let barHeight;
+                let color;
+                
+                // Create more realistic frequency distribution
+                const frequency = i / bars; // 0 to 1
+                
+                if (type === 'original') {
+                    // Simulate noisy signal with realistic frequency response
+                    let amplitude;
+                    if (frequency < 0.1) { // Low frequencies - usually stronger signal
+                        amplitude = 0.7 + Math.sin(time + i * 0.3) * 0.2;
+                    } else if (frequency < 0.3) { // Mid frequencies - speech/music
+                        amplitude = 0.8 + Math.sin(time + i * 0.2) * 0.3;
+                    } else if (frequency < 0.6) { // High mid - harmonics
+                        amplitude = 0.5 + Math.sin(time + i * 0.4) * 0.2;
+                    } else { // High frequencies - mostly noise
+                        amplitude = 0.3 + Math.random() * 0.7; // More random noise
+                    }
+                    
+                    const noise = Math.random() * 0.4; // Background noise
+                    barHeight = (amplitude + noise) * height * 0.75;
+                    
+                    // Color coding for original
+                    if (frequency < 0.3) {
+                        // Strong signal areas - blue
+                        color = `rgba(34, 193, 195, ${0.7 + Math.sin(time + i * 0.1) * 0.3})`;
+                    } else if (frequency < 0.6) {
+                        // Mixed signal/noise - purple
+                        color = `rgba(150, 100, 200, ${0.6 + Math.sin(time + i * 0.15) * 0.2})`;
+                    } else {
+                        // High freq noise - red
+                        color = `rgba(255, 107, 107, ${0.8 + Math.random() * 0.2})`;
+                    }
+                } else {
+                    // Processed signal - reduced noise
+                    let amplitude;
+                    if (frequency < 0.1) {
+                        amplitude = 0.7 + Math.sin(time + i * 0.3) * 0.15; // Slightly reduced
+                    } else if (frequency < 0.3) {
+                        amplitude = 0.8 + Math.sin(time + i * 0.2) * 0.25; // Clean signal preserved
+                    } else if (frequency < 0.6) {
+                        amplitude = 0.45 + Math.sin(time + i * 0.4) * 0.15; // Some reduction
+                    } else {
+                        amplitude = 0.1 + Math.random() * 0.2; // Heavy noise reduction
+                    }
+                    
+                    const noise = Math.random() * 0.1; // Much less noise
+                    barHeight = (amplitude + noise) * height * 0.7;
+                    
+                    // Color coding for processed
+                    if (frequency < 0.3) {
+                        // Preserved signal - bright blue
+                        color = `rgba(34, 193, 195, ${0.8 + Math.sin(time + i * 0.1) * 0.2})`;
+                    } else if (frequency < 0.6) {
+                        // Reduced but present - yellow/green
+                        color = `rgba(253, 187, 45, ${0.6 + Math.sin(time + i * 0.15) * 0.2})`;
+                    } else {
+                        // Heavily reduced noise - dim yellow
+                        color = `rgba(253, 187, 45, ${0.3 + Math.random() * 0.2})`;
+                    }
+                }
+
+                // Draw bar with glow effect
+                ctx.fillStyle = color;
+                const x = i * barWidth;
+                const y = height - barHeight;
+                
+                // Main bar
+                ctx.fillRect(x, y, barWidth - 2, barHeight);
+                
+                // Glow effect
+                ctx.shadowColor = color;
+                ctx.shadowBlur = 8;
+                ctx.fillRect(x, y, barWidth - 2, barHeight);
+                ctx.shadowBlur = 0;
+                
+                // Peak indicator for higher frequencies
+                if (barHeight > height * 0.6) {
+                    ctx.fillStyle = `rgba(255, 255, 255, ${0.3 + Math.random() * 0.2})`;
+                    ctx.fillRect(x, y - 2, barWidth - 2, 2);
+                }
+            }
+
+            // Draw frequency labels
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
+            ctx.font = '11px Inter';
+            ctx.textAlign = 'center';
+            ctx.fillText('0Hz', 15, height - 8);
+            ctx.fillText('2kHz', width * 0.25, height - 8);
+            ctx.fillText('4kHz', width * 0.5, height - 8);
+            ctx.fillText('8kHz', width * 0.75, height - 8);
+            ctx.fillText('16kHz', width - 25, height - 8);
+            
+            // Draw amplitude scale
+            ctx.textAlign = 'left';
+            ctx.fillText('dB', 5, 15);
+            ctx.font = '9px Inter';
+            ctx.fillText('0', 5, height - 80);
+            ctx.fillText('-20', 5, height - 60);
+            ctx.fillText('-40', 5, height - 40);
+            ctx.fillText('-60', 5, height - 20);
+        }
+
+        // Animate spectrum when playing
+        function animateSpectrum(canvasId, type) {
+            const interval = setInterval(() => {
+                const audio = type === 'original' ? originalAudio : processedAudio;
+                if (audio.paused) {
+                    clearInterval(interval);
+                    return;
+                }
+                drawSpectrum(canvasId, type);
+            }, 100);
+        }
+    </script>
 </body>
 </html>
