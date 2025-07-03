@@ -154,8 +154,6 @@ PORT = 5000
 DEBUG = True
 ```
 
-## 📊 Performance
-
 ### Processing time (average)
 - 30s file: ~2-3 seconds
 - 1 minute file: ~5-7 seconds  
@@ -166,21 +164,6 @@ DEBUG = True
 - **Artifact reduction**: 85-95%
 - **Speech quality**: Improved MOS score
 
-## 🤝 Contributing
-
-We welcome all contributions! To participate:
-
-1. Fork this repository
-2. Create feature branch (`git checkout -b feature/AmazingFeature`)
-3. Commit changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to branch (`git push origin feature/AmazingFeature`)
-5. Open Pull Request
-
-### Contribution Guidelines
-- Write clean and commented code
-- Follow PEP 8 style guide
-- Add unit tests for new features
-- Update documentation
 
 ## 📝 License
 
