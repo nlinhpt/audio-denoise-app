@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>Khử nhiễu âm thanh AI</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <canvas id="wave-bg"></canvas>
+    <div class="container">
+        <h1>Khử Nhiễu Âm Thanh</h1>
+        <p>Tải lên file âm thanh (wav, mp3, flac, ogg, m4a) để khử nhiễu bằng AI</p>
+        <form method="POST" enctype="multipart/form-data">
+            <input type="file" name="audio_file" required>
+            <button type="submit">Xử lý & Tải về</button>
+        </form>
+        {% if result_url %}
+        <div class="result">
+            <h3>Đã xử lý xong!</h3>
+            <a href="{{ result_url }}" class="download-btn">Tải file đã khử nhiễu</a>
+        </div>
+        {% endif %}
+        {% with messages = get_flashed_messages() %}
+          {% if messages %}
+            <ul class="flashes">
+              {% for message in messages %}
+                <li>{{ message }}</li>
+              {% endfor %}
+            </ul>
+          {% endif %}
+        {% endwith %}
+    </div>
+    <script src="{{ url_for('static', filename='wave-bg.js') }}"></script>
+</body>
+</html>
