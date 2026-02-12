@@ -21,7 +21,7 @@ Audio Denoiser is a modern web application that allows users to remove noise fro
 
 ## 🚀 Demo
 
-[![Audio Denoiser Demo](demo-screenshot.png)](https://youtu.be/GxQLITj1ZQI)
+https://github.com/user-attachments/assets/c9615120-8b43-400d-b675-85b1500a846b
 
 
 ### Algorithm
